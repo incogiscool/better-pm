@@ -17,6 +17,42 @@ export interface Task {
   column: string;
   labels?: TaskLabel[];
   milestones?: Milestone[];
+  githubIssueNumber?: number;
+  githubIssueUrl?: string;
+  prUrl?: string;
+  branchName?: string;
+  assignedEngineerId?: string;
+  agentStatus?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Engineer {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  discordId?: string;
+  githubUsername?: string;
+  skills?: string[];
+  createdAt?: string;
+}
+
+export interface AgentSession {
+  id: string;
+  taskId: string;
+  startedAt: string;
+  endedAt?: string;
+  status: string;
+}
+
+export interface AgentEvent {
+  id: string;
+  sessionId: string;
+  type: string;
+  message: string;
+  metadata?: unknown;
+  createdAt: string;
 }
 
 export interface Column {
@@ -44,6 +80,7 @@ export interface GitHubIssue {
   title: string;
   body: string | null;
   state: "open" | "closed";
+  html_url: string;
   labels: GitHubLabel[];
   milestone: GitHubMilestone | null;
 }
@@ -52,4 +89,5 @@ export type WsMessage =
   | { type: "task:created"; task: Task }
   | { type: "task:updated"; task: Task }
   | { type: "task:deleted"; taskId: string }
-  | { type: "tasks:init"; tasks: Task[] };
+  | { type: "tasks:init"; tasks: Task[] }
+  | { type: "agent:event"; taskId: string; event: AgentEvent };
