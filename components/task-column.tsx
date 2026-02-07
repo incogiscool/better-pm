@@ -10,12 +10,20 @@ export interface TaskLabel {
   color: string;
 }
 
+export interface Milestone {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   identifier: string;
   name: string;
+  description?: string;
   column: string;
   labels?: TaskLabel[];
+  milestones?: Milestone[];
 }
 
 export interface Column {
@@ -29,6 +37,7 @@ interface TaskColumnProps {
   column: Column;
   tasks: Task[];
   className?: string;
+  onTaskClick?: (task: Task) => void;
 }
 
 function StatusIcon({ color, progress }: { color: string; progress: number }) {
@@ -76,7 +85,12 @@ function StatusIcon({ color, progress }: { color: string; progress: number }) {
   );
 }
 
-export function TaskColumn({ column, tasks, className }: TaskColumnProps) {
+export function TaskColumn({
+  column,
+  tasks,
+  className,
+  onTaskClick,
+}: TaskColumnProps) {
   return (
     <div className={cn("flex min-w-0 flex-col", className)}>
       <div className="flex items-center gap-2 pb-3">
@@ -92,6 +106,7 @@ export function TaskColumn({ column, tasks, className }: TaskColumnProps) {
               key={task.id}
               size="sm"
               className="cursor-pointer transition-colors hover:bg-accent/50"
+              onClick={() => onTaskClick?.(task)}
             >
               <CardHeader>
                 <span className="text-xs text-muted-foreground">
