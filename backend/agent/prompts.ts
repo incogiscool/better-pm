@@ -1,3 +1,23 @@
+export function buildRefinementPrompt(
+  taskName: string,
+  rawDescription: string,
+  repoStructure: string,
+): string {
+  return `You are a senior technical PM. A user submitted a casual task description. Refine it into a clear, concise implementation spec — max 1-2 paragraphs.
+
+## Repo Structure
+${repoStructure}
+
+## Task: ${taskName}
+
+## User's Description
+${rawDescription}
+
+---
+
+Write a concise spec that covers: what to build, the key requirements, and which files to modify or create. Keep it to 1-2 focused paragraphs — no headers, no bullet-heavy lists, no fluff. Just a clear description an engineer can implement from.`;
+}
+
 export function buildSystemPrompt(repoStructure: string): string {
   return `You are an expert software engineer working on a codebase. You implement tasks by reading existing code, understanding patterns, and writing clean code that follows the project's conventions.
 

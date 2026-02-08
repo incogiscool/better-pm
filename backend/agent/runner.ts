@@ -1,9 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { buildSystemPrompt, buildTaskPrompt } from "./prompts";
+import { buildSystemPrompt, buildTaskPrompt, buildRefinementPrompt } from "./prompts";
 import { getRepoStructure, readFile } from "./file-context";
 import { SessionManager } from "./session-manager";
-import { createBranch, createPR } from "../lib/github";
-import { updateTask } from "../db/queries";
+import { createBranch, createPR, updateIssue } from "../lib/github";
+import { updateTask, getTask } from "../db/queries";
 import { wsManager } from "../lib/ws-manager";
 import { Octokit } from "octokit";
 
@@ -48,6 +48,54 @@ interface FileChange {
   content: string;
 }
 
+async function refineDescription(
+  anthropic: Anthropic,
+  taskId: string,
+  taskName: string,
+  rawDescription: string,
+  repoStructure: string,
+  session: SessionManager,
+): Promise<string> {
+  console.log("[agent] Refining description for task:", taskId);
+  await session.emit("thinking", "Refining task description into detailed spec...");
+
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-5-20250929",
+    max_tokens: 4096,
+    messages: [
+      {
+        role: "user",
+        content: buildRefinementPrompt(taskName, rawDescription, repoStructure),
+      },
+    ],
+  });
+
+  const refined = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === "text")
+    .map((block) => block.text)
+    .join("\n");
+
+  console.log("[agent] Description refined, length:", refined.length);
+  await session.emit("thinking", "Task spec refined — saving to task and GitHub issue...");
+
+  // Save refined description back to the task
+  const updated = await updateTask(taskId, { description: refined });
+  if (updated) wsManager.broadcast({ type: "task:updated", task: updated });
+
+  // Update the linked GitHub issue with the refined description
+  const task = await getTask(taskId);
+  if (task?.githubIssueNumber) {
+    try {
+      await updateIssue(task.githubIssueNumber, { body: refined });
+      console.log("[agent] GitHub issue #" + task.githubIssueNumber + " updated with refined spec");
+    } catch (err) {
+      console.error("[agent] Failed to update GitHub issue:", err);
+    }
+  }
+
+  return refined;
+}
+
 export async function runAgent(
   taskId: string,
   taskName: string,
@@ -66,10 +114,24 @@ export async function runAgent(
     const repoStructure = await getRepoStructure();
 
     const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+
+    // Step 1: Refine the raw description into a detailed spec
+    const refinedDescription = await refineDescription(
+      anthropic,
+      taskId,
+      taskName,
+      taskDescription,
+      repoStructure,
+      session,
+    );
+
+    // Step 2: Implement using the refined spec
+    await session.emit("thinking", "Starting implementation from refined spec...");
+
     const fileChanges: FileChange[] = [];
 
     const messages: Anthropic.MessageParam[] = [
-      { role: "user", content: buildTaskPrompt(taskName, taskDescription) },
+      { role: "user", content: buildTaskPrompt(taskName, refinedDescription) },
     ];
 
     let continueLoop = true;
@@ -195,6 +257,7 @@ export async function runAgent(
     await session.complete();
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[agent] Error:", message);
     await session.fail(message);
 
     const task = await updateTask(taskId, { agentStatus: "idle" });
