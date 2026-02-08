@@ -250,7 +250,7 @@ export async function runAgent(
       column: "in-review",
       prUrl: pr.html_url,
       branchName,
-      agentStatus: "awaiting-review",
+      agentStatus: "awaiting-close",
     });
     if (updatedTask) wsManager.broadcast({ type: "task:updated", task: updatedTask });
 

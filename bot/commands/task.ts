@@ -58,8 +58,7 @@ export const data = new SlashCommandBuilder()
           .addChoices(
             { name: "Backlog", value: "backlog" },
             { name: "Active", value: "active" },
-            { name: "In Review", value: "in-review" },
-            { name: "Ready to Deploy", value: "ready-to-deploy" },
+            { name: "Awaiting Close", value: "in-review" },
             { name: "Production", value: "production" },
           ),
       ),
@@ -191,8 +190,7 @@ async function handleStatus(interaction: ChatInputCommandInteraction) {
     const columnEmoji: Record<string, string> = {
       backlog: "\u{26AA}",
       active: "\u{1F7E0}",
-      "in-review": "\u{1F7E2}",
-      "ready-to-deploy": "\u{1F535}",
+      "in-review": "\u{1F535}",
       production: "\u{1F7E3}",
     };
 

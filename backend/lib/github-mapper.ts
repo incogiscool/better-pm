@@ -1,6 +1,6 @@
 import type { TaskLabel, GitHubLabel } from "./types";
 
-const VALID_COLUMNS = ["backlog", "active", "in-review", "ready-to-deploy", "production"];
+const VALID_COLUMNS = ["backlog", "active", "in-review", "production"];
 
 export function resolveColumn(issue: {
   state: string;

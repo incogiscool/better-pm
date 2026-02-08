@@ -10,14 +10,8 @@ import { updateTask } from "@/lib/api";
 
 const COLUMNS: Column[] = [
   { id: "backlog", title: "Backlog", color: "#95a2b3", progress: 0 },
-  { id: "active", title: "Active", color: "#f2994a", progress: 25 },
-  { id: "in-review", title: "In Review", color: "#6fcf97", progress: 50 },
-  {
-    id: "ready-to-deploy",
-    title: "Ready to Deploy",
-    color: "#2f80ed",
-    progress: 75,
-  },
+  { id: "active", title: "Active", color: "#f2994a", progress: 33 },
+  { id: "in-review", title: "Awaiting Close", color: "#2f80ed", progress: 66 },
   { id: "production", title: "Production", color: "#9b51e0", progress: 100 },
 ];
 
@@ -79,7 +73,7 @@ export default function Page() {
       </header>
 
       <DndContext onDragEnd={handleDragEnd} collisionDetection={pointerWithin}>
-        <div className="grid flex-1 grid-cols-5 gap-6 overflow-hidden p-6">
+        <div className="grid flex-1 grid-cols-4 gap-6 overflow-hidden p-6">
           {COLUMNS.map((column) => {
             const columnTasks = filteredTasks.filter(
               (task) => task.column === column.id,

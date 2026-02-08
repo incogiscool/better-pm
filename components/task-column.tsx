@@ -127,9 +127,11 @@ function DraggableTaskCard({
               {task.identifier}
             </span>
             {task.agentStatus && task.agentStatus !== "idle" && (
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                 <span className="size-1.5 animate-pulse rounded-full bg-orange-400" />
-                {task.agentStatus}
+                {task.agentStatus === "awaiting-close"
+                  ? "awaiting"
+                  : task.agentStatus}
               </span>
             )}
           </div>

@@ -37,7 +37,8 @@ export async function handleWebhook(
   // GitHub sends form-encoded body when content type is application/x-www-form-urlencoded
   let jsonBody = body;
   if (body.startsWith("payload=")) {
-    jsonBody = decodeURIComponent(body.slice("payload=".length));
+    const encoded = body.slice("payload=".length);
+    jsonBody = decodeURIComponent(encoded.replace(/\+/g, " "));
     console.log("[webhook] Decoded form-encoded payload");
   }
 
@@ -79,6 +80,10 @@ async function handleIssueEvent(payload: {
 
   switch (action) {
     case "opened": {
+      if (existing) {
+        console.log("[webhook:issues] Task already exists for issue #" + issue.number + ", skipping creation");
+        break;
+      }
       const labels = mapLabelsToTaskLabels(issue.labels);
       const column = resolveColumn({
         state: issue.state as "open" | "closed",
@@ -139,7 +144,7 @@ async function handleIssueEvent(payload: {
     case "closed": {
       if (existing) {
         console.log("[webhook:issues] Closing task:", existing.id);
-        const task = await updateTask(existing.id, { column: "production" });
+        const task = await updateTask(existing.id, { column: "production", agentStatus: "idle" });
         if (task) wsManager.broadcast({ type: "task:updated", task });
       }
       break;
@@ -242,7 +247,7 @@ async function handlePullRequestEvent(payload: {
     case "closed": {
       if (pr.merged) {
         console.log("[webhook:pr] PR merged, moving task to production");
-        const task = await updateTask(existing.id, { column: "production" });
+        const task = await updateTask(existing.id, { column: "production", agentStatus: "idle" });
         if (task) wsManager.broadcast({ type: "task:updated", task });
       } else {
         console.log("[webhook:pr] PR closed without merge");
@@ -270,9 +275,10 @@ async function handlePullRequestReviewEvent(payload: {
   if (!existing) return;
 
   if (review.state === "approved") {
-    console.log("[webhook:pr-review] Review approved, moving to ready-to-deploy");
+    console.log("[webhook:pr-review] Review approved, moving to production");
     const task = await updateTask(existing.id, {
-      column: "ready-to-deploy",
+      column: "production",
+      agentStatus: "idle",
     });
     if (task) wsManager.broadcast({ type: "task:updated", task });
   }
